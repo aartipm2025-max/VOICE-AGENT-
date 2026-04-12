@@ -127,8 +127,12 @@ else:
                         st.session_state.chat_history.append({"role": "assistant", "content": assistant_text})
                         st.session_state.audio_to_play = asyncio.run(generate_speech(assistant_text))
                         st.rerun()
+        except sr.UnknownValueError:
+            st.warning("I couldn't understand the audio. Please try speaking more clearly or use a quieter environment.")
+        except sr.RequestError as e:
+            st.error(f"Could not request results from Google Speech Recognition service; {e}")
         except Exception as e:
-            st.error(f"Error: {e}")
+            st.error(f"Speech processing error: {e}")
 
     # Sidebar Tools
     with st.sidebar:
