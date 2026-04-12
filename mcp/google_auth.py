@@ -35,12 +35,21 @@ def get_credentials():
     return creds
 
 def get_calendar_service():
+    if os.environ.get("MOCK_GOOGLE_APIS") == "1":
+        from unittest.mock import MagicMock
+        return MagicMock()
     return build('calendar', 'v3', credentials=get_credentials())
 
 def get_sheets_service():
+    if os.environ.get("MOCK_GOOGLE_APIs") == "1":
+        from unittest.mock import MagicMock
+        return MagicMock()
     return build('sheets', 'v4', credentials=get_credentials())
 
 def get_gmail_service():
+    if os.environ.get("MOCK_GOOGLE_APIs") == "1":
+        from unittest.mock import MagicMock
+        return MagicMock()
     return build('gmail', 'v1', credentials=get_credentials())
 
 if __name__ == '__main__':

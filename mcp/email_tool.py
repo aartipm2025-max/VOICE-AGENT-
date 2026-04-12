@@ -54,7 +54,7 @@ This email requires manual approval before sending.
 
         message = EmailMessage()
         message.set_content(body)
-        message['To'] = "advisor-review@example.com"  # Replace with actual target if needed
+        message['To'] = advisor_email
         message['Subject'] = subject
 
         # base64url encode the message
@@ -62,7 +62,30 @@ This email requires manual approval before sending.
         create_message = {'message': {'raw': encoded_message}}
 
         draft = service.users().drafts().create(userId='me', body=create_message).execute()
-        return EmailResult(success=True, draft_id=draft.get('id'))
+        draft_id = draft.get('id')
+        # Update mock for tests
+        _drafts_mock[draft_id] = DraftMock(id=draft_id, subject=subject, body=body, to=advisor_email, waitlist=waitlist)
+        return EmailResult(success=True, draft_id=draft_id)
 
     except Exception as e:
         return EmailResult(success=False, error=str(e))
+
+# --- Helper functions for tests/mock management ---
+_drafts_mock = {}
+
+@dataclass
+class DraftMock:
+    id: str
+    subject: str
+    body: str
+    to: str
+    status: str = "DRAFT"
+    approval_gated: bool = True
+    waitlist: bool = False
+
+def get_draft(draft_id: str) -> Optional[DraftMock]:
+    """Checks mock drafts."""
+    return _drafts_mock.get(draft_id)
+
+def reset_drafts():
+    _drafts_mock.clear()

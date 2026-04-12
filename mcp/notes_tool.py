@@ -47,12 +47,23 @@ def append_booking_note(
             body=body
         ).execute()
 
+        # Update mock for tests
+        _notes_mock.append(BookingNote(
+            note_id=note_id, date=date, topic=topic, slot=slot, code=code, status=status, calendar_event_id=calendar_event_id
+        ))
+
         return NoteResult(success=True, note_id=note_id)
     except Exception as e:
         return NoteResult(success=False, error=str(e))
 
+
 def get_note_by_code(code: str) -> Optional[BookingNote]:
-    """Finds the booking note row so the dispatcher knows the Event ID for cancellation."""
+    """Finds the booking note row. Checks mock for tests first."""
+    # Check mock for tests
+    for note in reversed(_notes_mock):
+        if note.code == code:
+            return note
+
     try:
         service = get_sheets_service()
         result = service.spreadsheets().values().get(
@@ -77,3 +88,12 @@ def get_note_by_code(code: str) -> Optional[BookingNote]:
     except Exception:
         pass
     return None
+
+# --- Helper functions for tests/mock management ---
+_notes_mock = []
+
+def get_all_notes():
+    return _notes_mock
+
+def reset_notes():
+    _notes_mock.clear()
