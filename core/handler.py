@@ -203,32 +203,45 @@ def _handle_collect_time_pref(user_text: str, session: Session) -> tuple[list[st
 
 def _handle_offer_slots(user_text: str, session: Session) -> tuple[list[str], State]:
     """User picks a slot or rejects both."""
-    text_stripped = user_text.strip().lower()
+    text_lower = user_text.strip().lower()
 
-    if text_stripped in ("1", "slot 1", "first", "first one"):
+    # 1. Flexible selection matching (numbers and words)
+    if any(x in text_lower for x in ("1", "one", "first", "number one", "option one")):
         session.chosen_slot = session.offered_slots[0]
-    elif text_stripped in ("2", "slot 2", "second", "second one"):
-        session.chosen_slot = session.offered_slots[1]
-    elif "neither" in text_stripped or "none" in text_stripped or "different" in text_stripped:
+    elif any(x in text_lower for x in ("2", "two", "second", "number two", "option two")):
+        if len(session.offered_slots) > 1:
+            session.chosen_slot = session.offered_slots[1]
+        else:
+            session.chosen_slot = session.offered_slots[0]
+            
+    # 2. Rejection/Different time matching
+    elif any(x in text_lower for x in ("neither", "none", "different", "change", "nothing", "other")):
         responses = [
             "No problem. Let me find different times for you.",
             f"What other day/time works for you? (Times in {TIMEZONE})",
         ]
         return responses, State.COLLECT_TIME_PREF
+    
+    # 3. Handle cases where user just gives a new date/time (Fallback)
+    elif any(x in text_lower for x in ("tomorrow", "today", "monday", "tuesday", "wednesday", "thursday", "friday", "pm", "am")):
+        # User is clearly trying to specify a different time
+        return _handle_collect_time_pref(user_text, session)
+
     else:
         responses = [
-            "Please enter 1 or 2 to pick a slot, or say 'neither' for different options."
+            "I'm sorry, I need you to choose Slot 1 or Slot 2 to proceed.",
+            "You can also say 'different' if you'd like to try another time."
         ]
         return responses, State.OFFER_SLOTS
 
     slot = session.chosen_slot
     responses = [
-        "Let me confirm your appointment details:",
+        "Got it! Let me confirm those details:",
         f"  Topic:  {session.topic.value}",
         f"  Date:   {slot.date}",
         f"  Time:   {slot.time} {TIMEZONE}",
         "",
-        "Shall I go ahead and book this? (yes/no)",
+        "Shall I go ahead and book this? (Please say 'yes' or 'confirm')"
     ]
     return responses, State.CONFIRM_BOOKING
 
