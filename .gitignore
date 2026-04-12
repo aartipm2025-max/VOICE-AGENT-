@@ -1,0 +1,12 @@
+# Git Ignore
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+credentials.json
+token.json
+.pytest_cache/
+responses_*.mp3
+resp_*.mp3
+*.log

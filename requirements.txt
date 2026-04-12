@@ -1,0 +1,19 @@
+# Phase 1
+pytest
+
+# Phase 2 — LLM integration (optional, falls back to keywords if not installed)
+google-genai
+
+# Phase 4 — Actual MCPs (Google APIs)
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+# Phase 5 — REST API
+fastapi
+uvicorn
+
+# Phase 6 — Voice UI
+gradio
+edge-tts
+SpeechRecognition
+streamlit
