@@ -21,19 +21,12 @@ API_URL = "http://127.0.0.1:8000"
 st.markdown("""
 <style>
     .stApp {
-        background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #0f172a);
-        background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite;
-    }
-    @keyframes gradientBG {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+        background: #ffffff;
+        color: #000000;
     }
     .glass-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: #ffffff;
+        border: 1px solid #000000;
         border-radius: 20px;
         padding: 2rem;
         margin-bottom: 1rem;
@@ -41,17 +34,33 @@ st.markdown("""
     .header-text {
         font-weight: 800;
         font-size: 2.5rem;
-        background: -webkit-linear-gradient(45deg, #38bdf8, #a78bfa);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #000000;
         text-align: center;
         margin-bottom: 0;
     }
     .sub-text {
-        color: #cbd5e1;
+        color: #000000;
         text-align: center;
         font-size: 1.1rem;
         margin-bottom: 2rem;
+    }
+    div[data-testid="stChatMessage"] {
+        border: 1px solid #000000;
+        background: #f3f4f6;
+        color: #000000;
+    }
+    .stChatInputContainer {
+        border: 1px solid #000000 !important;
+        background: #ffffff !important;
+    }
+    .stButton > button {
+        background: #000000 !important;
+        color: #ffffff !important;
+        border: 1px solid #000000 !important;
+    }
+    .stChatInput textarea {
+        color: #000000 !important;
+        background: #ffffff !important;
     }
     /* Hide Streamlit elements for cleaner look */
     #MainMenu {visibility: hidden;}

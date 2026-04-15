@@ -18,20 +18,12 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
     .stApp {
-        background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #0f172a);
-        background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite;
-    }
-    @keyframes gradientBG {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+        background: #ffffff;
+        color: #000000;
     }
     .header-style {
         text-align: center;
-        background: -webkit-linear-gradient(45deg, #38bdf8, #a78bfa);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #000000;
         font-weight: 800;
         font-size: 2.8rem;
         padding-bottom: 0;
@@ -39,7 +31,7 @@ st.markdown("""
     }
     .sub-header {
         text-align: center;
-        color: #94a3b8;
+        color: #000000;
         font-size: 1.1rem;
         margin-bottom: 2rem;
     }
@@ -47,12 +39,14 @@ st.markdown("""
         border-radius: 14px;
         padding: 8px 16px;
         margin-bottom: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background: rgba(255, 255, 255, 0.04);
-        backdrop-filter: blur(10px);
+        border: 1px solid #000000;
+        background: #f3f4f6;
+        color: #000000;
     }
     .stChatInputContainer {
         border-radius: 14px !important;
+        border: 1px solid #000000 !important;
+        background: #ffffff !important;
     }
     .status-badge {
         display: inline-block;
@@ -63,14 +57,23 @@ st.markdown("""
         margin-bottom: 1rem;
     }
     .status-active {
-        background: rgba(34, 197, 94, 0.15);
-        color: #22c55e;
-        border: 1px solid rgba(34, 197, 94, 0.3);
+        background: #ffffff;
+        color: #000000;
+        border: 1px solid #000000;
     }
     .status-ended {
-        background: rgba(239, 68, 68, 0.15);
-        color: #ef4444;
-        border: 1px solid rgba(239, 68, 68, 0.3);
+        background: #000000;
+        color: #ffffff;
+        border: 1px solid #000000;
+    }
+    .stButton > button {
+        background: #000000 !important;
+        color: #ffffff !important;
+        border: 1px solid #000000 !important;
+    }
+    .stChatInput textarea {
+        color: #000000 !important;
+        background: #ffffff !important;
     }
 </style>
 """, unsafe_allow_html=True)
