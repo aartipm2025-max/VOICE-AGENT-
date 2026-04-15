@@ -131,14 +131,14 @@ async def process_turn(audio_path, session_id, history):
         history.append({"role": "assistant", "content": f"Backend Error: {str(e)}"})
         yield history, None, None
 
-with gr.Blocks() as demo:
+with gr.Blocks(theme=gr.themes.Soft(primary_hue="indigo"), css=CUSTOM_CSS) as demo:
     session_id_state = gr.State("")
     
     with gr.Column(elem_classes=["glass-container"]):
         gr.Markdown("<h1 class='header-text'>Advisor Voice Agent</h1>")
         gr.Markdown("<p class='sub-text'>Hands-free compliant appointment scheduling.</p>")
         
-        chatbot = gr.Chatbot(height=450)
+        chatbot = gr.Chatbot(type="messages", height=450, bubble_full_width=False)
         
         # Audio auto-player hidden helper
         audio_out = gr.Audio(visible=False, autoplay=True)
@@ -158,5 +158,4 @@ with gr.Blocks() as demo:
 
 if __name__ == "__main__":
     print("Starting Voice UI server on port 7860...")
-    theme = gr.themes.Soft(primary_hue="indigo")
-    demo.launch(server_name="127.0.0.1", server_port=7860, theme=theme, css=CUSTOM_CSS)
+    demo.launch(server_name="127.0.0.1", server_port=7860)

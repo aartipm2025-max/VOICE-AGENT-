@@ -21,7 +21,7 @@ The exact same transport-agnostic logic tested in Phase 1-4 via command-line sim
 
 #### 2. Stateless Interface / Stateful Backend
 The API is completely stateless from an HTTP perspective. Clients only need to send `{ "session_id": "...", "text": "..." }`. The `core.session` system maintains conversation histories, FSM rules, and memory without requiring clients to bounce context back and forth.
-
+tell me 
 #### 3. Automatic End-to-End Execution
 Because we integrated real Google Workspace API tools in Phase 4, hitting `POST /message` with an appointment confirmation instantly and elegantly reaches into Google Calendar and Gmail outboxes automatically, wrapping everything up in an HTTP 200 JSON response confirming the action.
 

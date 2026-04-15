@@ -16,4 +16,7 @@ uvicorn
 gradio
 edge-tts
 SpeechRecognition
+
+# Chat UI
+streamlit
 streamlit

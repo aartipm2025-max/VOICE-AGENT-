@@ -16,32 +16,24 @@ from typing import Optional
 # ---------------------------------------------------------------------------
 
 class State(Enum):
-    """All possible states in the conversation FSM."""
-    GREETING              = auto()
-    DISCLAIMER_DELIVERED  = auto()
-    AWAIT_INTENT          = auto()
-    COLLECT_TOPIC         = auto()
-    COLLECT_TIME_PREF     = auto()
-    OFFER_SLOTS           = auto()
-    CONFIRM_BOOKING       = auto()
-    WAITLIST              = auto()
-    MCP_SIDE_EFFECTS      = auto()
-    HANDOFF               = auto()
-    CONFIRM_CANCEL        = auto()
-    MCP_SIDE_EFFECTS_CANCEL = auto()
-    INFO_RESPONSE         = auto()
-    ENDED                 = auto()
-
+    """Refined Voice Agent States."""
+    START                = auto()
+    TOPIC_CONFIRMED      = auto()
+    TIME_CAPTURED        = auto()
+    SLOT_OFFERED         = auto()
+    CONFIRMATION_PENDING = auto()
+    BOOKED               = auto()
+    CANCEL_FLOW          = auto()
+    ENDED                = auto()
 
 class Intent(Enum):
-    """The 5 allowed intents."""
+    """Supported intents."""
     BOOK_NEW           = "book_new"
     RESCHEDULE         = "reschedule"
     CANCEL             = "cancel"
     WHAT_TO_PREPARE    = "what_to_prepare"
     CHECK_AVAILABILITY = "check_availability"
     UNKNOWN            = "unknown"
-
 
 class Topic(Enum):
     """The 5 strict consultation topics."""
@@ -50,7 +42,6 @@ class Topic(Enum):
     STATEMENTS_TAX_DOCS     = "Statements/Tax Docs"
     WITHDRAWALS_TIMELINES   = "Withdrawals & Timelines"
     ACCOUNT_CHANGES_NOMINEE = "Account Changes/Nominee"
-
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -62,7 +53,6 @@ class Turn:
     role: str   # "user" or "assistant"
     text: str
 
-
 @dataclass
 class Slot:
     """A proposed appointment slot."""
@@ -70,21 +60,25 @@ class Slot:
     time: str       # e.g. "3:00 PM"
     advisor_id: str  # e.g. "ADV-01"
 
-
 @dataclass
 class Session:
     """
     Holds all mutable state for a single conversation.
-    One session = one phone call / chat thread.
+    Global memory in sync with Voice Agent requirements.
     """
     session_id:       str            = field(default_factory=lambda: str(uuid.uuid4()))
-    state:            State          = State.GREETING
+    state:            State          = State.START
+    
+    # Global Memory
+    intent:           Optional[Intent] = None
     topic:            Optional[Topic] = None
-    day_preference:   Optional[str]  = None
-    time_preference:  Optional[str]  = None
-    offered_slots:    list           = field(default_factory=list)
-    chosen_slot:      Optional[Slot] = None
-    booking_code:     Optional[str]  = None
+    date:             Optional[str]   = None
+    time:             Optional[str]   = None
+    offered_slots:    list            = field(default_factory=list)
+    last_offered_slots: list          = field(default_factory=list)
+    chosen_slot:      Optional[Slot]  = None
+    booking_code:     Optional[str]   = None
+    
     disclaimer_given: bool           = False
     turn_history:     list           = field(default_factory=list)
 
@@ -97,26 +91,19 @@ class Session:
         self.state = new_state
 
 
+
 # ---------------------------------------------------------------------------
 # Valid FSM transitions — used for validation
 # ---------------------------------------------------------------------------
 
 VALID_TRANSITIONS: dict[State, list[State]] = {
-    State.GREETING:             [State.DISCLAIMER_DELIVERED],
-    State.DISCLAIMER_DELIVERED: [State.AWAIT_INTENT],
-    State.AWAIT_INTENT:         [State.COLLECT_TOPIC, State.CONFIRM_CANCEL,
-                                 State.INFO_RESPONSE],
-    State.COLLECT_TOPIC:        [State.COLLECT_TIME_PREF],
-    State.COLLECT_TIME_PREF:    [State.OFFER_SLOTS],
-    State.OFFER_SLOTS:          [State.CONFIRM_BOOKING, State.WAITLIST,
-                                 State.COLLECT_TIME_PREF],
-    State.CONFIRM_BOOKING:      [State.MCP_SIDE_EFFECTS],
-    State.WAITLIST:             [State.MCP_SIDE_EFFECTS],
-    State.MCP_SIDE_EFFECTS:     [State.HANDOFF],
-    State.HANDOFF:              [State.ENDED],
-    State.CONFIRM_CANCEL:       [State.MCP_SIDE_EFFECTS_CANCEL, State.AWAIT_INTENT],
-    State.MCP_SIDE_EFFECTS_CANCEL: [State.ENDED],
-    State.INFO_RESPONSE:        [State.AWAIT_INTENT],
+    State.START:                [State.TOPIC_CONFIRMED, State.CANCEL_FLOW],
+    State.TOPIC_CONFIRMED:      [State.TIME_CAPTURED, State.SLOT_OFFERED],
+    State.TIME_CAPTURED:        [State.SLOT_OFFERED],
+    State.SLOT_OFFERED:         [State.CONFIRMATION_PENDING, State.TIME_CAPTURED],
+    State.CONFIRMATION_PENDING: [State.BOOKED, State.START],
+    State.BOOKED:               [State.ENDED],
+    State.CANCEL_FLOW:          [State.ENDED, State.START],
     State.ENDED:                [],
 }
 

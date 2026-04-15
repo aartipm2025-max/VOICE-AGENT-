@@ -54,7 +54,7 @@ This email requires manual approval before sending.
 
         message = EmailMessage()
         message.set_content(body)
-        message['To'] = advisor_email
+        # No 'To' header — this is a draft for advisor review, not a sent email
         message['Subject'] = subject
 
         # base64url encode the message
