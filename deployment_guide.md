@@ -1,6 +1,6 @@
 # Deploying to Streamlit Cloud 🚀
 
-This guide explains how to deploy the **Advisor Voice Agent** to Streamlit Cloud.
+This guide explains how to deploy the **Advisor Chat Agent (Phase 5 scope)** to Streamlit Cloud.
 
 ## 1. Prerequisites
 - Your code must be pushed to a **GitHub repository**.
@@ -66,9 +66,9 @@ GOOGLE_TOKEN_JSON = '''
 ---
 
 ## 4. Key Considerations for Cloud
-- **Audio Input**: The browser will ask for Microphone permission. `st.audio_input` works seamlessly on modern browsers.
-- **Audio Autoplay**: Some browsers (like Chrome) block autoplay until the user interacts with the page once. The "🚀 Connect to Advisor Agent" button handles this initial interaction.
-- **Temporary Files**: The app generates temporary `.mp3` files for speech. Streamlit Cloud's ephemeral filesystem allows this, but they are cleared whenever the app reboots.
+- **Phase 5 Scope**: This deployment is chat + API logic only. No STT/TTS or microphone flow is included.
+- **Surface Choice**: Deploy root `app.py` for a self-contained Streamlit app with core logic.
+- **API Surface**: `streamlit_app/app.py` expects a separate FastAPI server at `http://127.0.0.1:8000` and is better suited for local split-surface testing.
 
 ## 5. Troubleshooting
 - **ModuleNotFoundError**: Ensure `requirements.txt` is in the root directory.

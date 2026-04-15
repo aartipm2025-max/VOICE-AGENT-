@@ -68,13 +68,25 @@ if 'chat_history' not in st.session_state:
 def init_backend_session():
     try:
         res = requests.post(f"{API_URL}/session")
-        if res.status_code == 200:
-            data = res.json()
-            st.session_state.session_id = data["session_id"]
-            # Get initial greeting
-            msg_res = requests.post(f"{API_URL}/message", json={"session_id": st.session_state.session_id, "text": ""})
-            responses = msg_res.json().get("responses", [])
-            greeting = " ".join(responses)
+        if res.status_code != 200:
+            st.error(f"Failed to create session: HTTP {res.status_code}")
+            return
+
+        data = res.json()
+        st.session_state.session_id = data["session_id"]
+
+        # Get initial greeting
+        msg_res = requests.post(
+            f"{API_URL}/message",
+            json={"session_id": st.session_state.session_id, "text": ""},
+        )
+        if msg_res.status_code != 200:
+            st.error(f"Failed to fetch greeting: HTTP {msg_res.status_code}")
+            return
+
+        responses = msg_res.json().get("responses", [])
+        greeting = " ".join(responses).strip()
+        if greeting:
             st.session_state.chat_history.append({"role": "assistant", "content": greeting})
     except Exception as e:
         st.error(f"Backend connection failed. Is the API server running? {e}")
@@ -103,6 +115,9 @@ with st.container():
                     f"{API_URL}/message",
                     json={"session_id": st.session_state.session_id, "text": user_text},
                 )
+                if res.status_code != 200:
+                    st.error(f"Backend returned HTTP {res.status_code}")
+                    st.stop()
                 data = res.json()
                 assistant_text = " ".join(data.get("responses", []))
                 if assistant_text:
@@ -113,6 +128,12 @@ with st.container():
 
         # Reset button
         if st.button("Clear Session", type="secondary"):
+            if st.session_state.session_id:
+                try:
+                    requests.delete(f"{API_URL}/session/{st.session_state.session_id}")
+                except Exception:
+                    # Clearing UI state is sufficient even if backend cleanup fails.
+                    pass
             st.session_state.session_id = None
             st.session_state.chat_history = []
             st.rerun()
