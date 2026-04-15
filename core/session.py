@@ -78,6 +78,8 @@ class Session:
     last_offered_slots: list          = field(default_factory=list)
     chosen_slot:      Optional[Slot]  = None
     booking_code:     Optional[str]   = None
+    confirmation_email: Optional[str] = None
+    email_sent:       bool            = False
     
     disclaimer_given: bool           = False
     turn_history:     list           = field(default_factory=list)

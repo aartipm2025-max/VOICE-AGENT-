@@ -1,7 +1,8 @@
 import streamlit as st
-import time
+import re
 from core.session import get_session, create_session as create_session_core, State
 from core.handler import handle
+from mcp.email_tool import send_client_confirmation_email
 
 st.set_page_config(
     page_title="Advisor Chat Agent",
@@ -106,6 +107,10 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
+
+def _is_valid_email(value: str) -> bool:
+    return bool(re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", value.strip()))
+
 # User Input
 if prompt := st.chat_input("Type your message to the advisor..."):
     session = get_session(st.session_state.session_id)
@@ -114,7 +119,7 @@ if prompt := st.chat_input("Type your message to the advisor..."):
         st.error("Session expired. Please refresh the page.")
         st.stop()
 
-    if session.state == State.BOOKED or session.state == State.ENDED:
+    if session.state == State.ENDED:
         st.info("This conversation has concluded. Refresh the page to start a new one.")
         st.stop()
 
@@ -136,3 +141,50 @@ if prompt := st.chat_input("Type your message to the advisor..."):
         st.success("✅ Conversation complete! Refresh the page to start a new session.")
 
     st.rerun()
+
+# Post-booking email capture flow
+session = get_session(st.session_state.session_id)
+if session and session.state == State.BOOKED:
+    st.markdown("---")
+    st.subheader("Receive booking confirmation by email")
+
+    if session.booking_code and session.chosen_slot and session.topic:
+        st.write(
+            f"Booking Details: `{session.booking_code}` | `{session.topic.value}` | "
+            f"`{session.chosen_slot.date}` at `{session.chosen_slot.time} IST`"
+        )
+
+    default_email = session.confirmation_email or ""
+    email_input = st.text_input(
+        "Enter your email",
+        value=default_email,
+        placeholder="name@example.com",
+        key="booking_email_input",
+    )
+
+    if st.button("Send Confirmation Email", use_container_width=True):
+        if not _is_valid_email(email_input):
+            st.error("Please enter a valid email address.")
+        elif not (session.booking_code and session.chosen_slot and session.topic):
+            st.error("Booking details are incomplete. Please restart the session.")
+        else:
+            send_result = send_client_confirmation_email(
+                to_email=email_input.strip(),
+                topic=session.topic.value,
+                code=session.booking_code,
+                date=session.chosen_slot.date,
+                time=session.chosen_slot.time,
+            )
+            if send_result.success:
+                session.confirmation_email = email_input.strip()
+                session.email_sent = True
+                confirmation_msg = (
+                    f"Confirmation sent to {session.confirmation_email}. "
+                    f"Booking `{session.booking_code}` on {session.chosen_slot.date} at "
+                    f"{session.chosen_slot.time} IST."
+                )
+                st.session_state.messages.append({"role": "assistant", "content": confirmation_msg})
+                st.success("Email confirmation sent successfully.")
+                st.rerun()
+            else:
+                st.error(f"Failed to send email confirmation: {send_result.error}")

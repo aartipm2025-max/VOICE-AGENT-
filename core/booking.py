@@ -332,9 +332,18 @@ def get_waitlist() -> list[dict]:
 # Slot booking (marks a slot as taken)
 # ---------------------------------------------------------------------------
 
-def book_slot(slot: Slot) -> None:
-    """Mark a slot as booked so it won't appear in future availability."""
-    _booked_slots.add((slot.date, slot.time))
+def book_slot(slot: Slot) -> bool:
+    """
+    Mark a slot as booked so it won't appear in future availability.
+
+    Returns:
+        True if booking succeeded, False if the slot was already booked.
+    """
+    key = (slot.date, slot.time)
+    if key in _booked_slots:
+        return False
+    _booked_slots.add(key)
+    return True
 
 
 # ---------------------------------------------------------------------------

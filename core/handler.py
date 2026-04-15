@@ -202,10 +202,36 @@ def _handle_confirmation(user_text: str, session: Session):
     is_confirm = any(x in text_lower for x in ["yes", "confirm", "ok", "book", "correct"]) or _is_repetition(user_text, session)
     
     if is_confirm:
+        if not session.chosen_slot:
+            return _respond("I couldn't identify the slot to confirm. Please select one from the offered options.", session)
+
+        # Prevent duplicate booking if another session has already taken this slot.
+        booked_now = book_slot(session.chosen_slot)
+        if not booked_now:
+            pref = f"{session.date or ''} {session.time or ''}".strip()
+            alternatives = resolve_slots(pref or "next available")
+            if not alternatives:
+                session.transition(State.TOPIC_CONFIRMED)
+                session.offered_slots = []
+                session.chosen_slot = None
+                return _respond(
+                    "That slot was just booked by someone else, and I could not find nearby alternatives. "
+                    "Please share another preferred day and time (IST).",
+                    session,
+                )
+
+            session.offered_slots = alternatives
+            session.chosen_slot = None
+            session.transition(State.SLOT_OFFERED)
+            alt_lines = [f"Slot {i+1}: {s.date} at {s.time}" for i, s in enumerate(alternatives)]
+            return _respond(
+                ["That slot was just taken. Here are the next available options:"] + alt_lines + ["Which one should I book?"],
+                session,
+            )
+
         # EXECUTE BOOKING
         code = f"NL-{generate_booking_code().split('-')[1]}"
         session.booking_code = code
-        book_slot(session.chosen_slot)
         
         execute_booking_side_effects(
             topic=session.topic.value,

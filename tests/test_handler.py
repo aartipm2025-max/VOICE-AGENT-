@@ -117,6 +117,29 @@ class TestBookingFlow:
             assert "-" in session.booking_code
             assert len(session.booking_code) >= 5
 
+    def test_taken_slot_offers_alternatives(self):
+        # Session A books a slot.
+        s1 = fresh_session()
+        handle("", s1)
+        handle("I want to book for KYC", s1)
+        handle("tomorrow at 3pm", s1)
+        handle("1", s1)
+        handle("yes", s1)
+        assert s1.state == State.BOOKED
+
+        # Session B tries to confirm that same already-booked slot (stale client scenario).
+        s2 = fresh_session()
+        s2.topic = Topic.KYC_ONBOARDING
+        s2.date = "tomorrow"
+        s2.time = "3pm"
+        s2.chosen_slot = s1.chosen_slot
+        s2.state = State.CONFIRMATION_PENDING
+        responses = handle("yes", s2)
+        joined = " ".join(responses).lower()
+
+        assert s2.state == State.SLOT_OFFERED
+        assert "taken" in joined or "next available" in joined
+
 
 class TestComplianceInHandler:
 

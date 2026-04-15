@@ -239,3 +239,9 @@ class TestBookSlot:
         all_after = get_all_available_slots()
         booked_dates_times = [(s.date, s.time) for s in all_after]
         assert (target.date, target.time) not in booked_dates_times
+
+    def test_cannot_book_same_slot_twice(self):
+        all_before = get_all_available_slots()
+        target = all_before[0]
+        assert book_slot(target) is True
+        assert book_slot(target) is False

@@ -70,6 +70,58 @@ This email requires manual approval before sending.
     except Exception as e:
         return EmailResult(success=False, error=str(e))
 
+
+def send_client_confirmation_email(
+    to_email: str,
+    topic: str,
+    code: str,
+    date: str,
+    time: str,
+) -> EmailResult:
+    """Send a booking confirmation email directly to the client."""
+    try:
+        service = get_gmail_service()
+        subject = f"Booking Confirmed: {topic} ({code})"
+        body = f"""
+Hello,
+
+Your appointment booking is confirmed.
+
+Booking Details:
+  Booking Code: {code}
+  Topic: {topic}
+  Date: {date}
+  Time: {time} IST
+
+Please keep this booking code for future reference.
+
+Regards,
+Advisor Appointment Scheduler
+        """.strip()
+
+        message = EmailMessage()
+        message["To"] = to_email
+        message["Subject"] = subject
+        message.set_content(body)
+
+        encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+        send_body = {"raw": encoded_message}
+
+        sent = service.users().messages().send(userId="me", body=send_body).execute()
+        message_id = sent.get("id")
+        _drafts_mock[message_id] = DraftMock(
+            id=message_id,
+            subject=subject,
+            body=body,
+            to=to_email,
+            waitlist=False,
+            status="SENT",
+            approval_gated=False,
+        )
+        return EmailResult(success=True, draft_id=message_id)
+    except Exception as e:
+        return EmailResult(success=False, error=str(e))
+
 # --- Helper functions for tests/mock management ---
 _drafts_mock = {}
 
