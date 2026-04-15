@@ -10,6 +10,7 @@ Components:
 """
 
 import random
+import re
 import string
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
@@ -176,6 +177,43 @@ def _parse_time_preference(text: str) -> tuple[int, int] | None:
     return None
 
 
+def _parse_specific_date_preference(text: str) -> str | None:
+    """
+    Parse exact calendar-style date text like:
+      - "20 april"
+      - "20 apr"
+      - "20 april 2026"
+
+    Returns a normalized date string in slot format if valid:
+      "Monday, 20 April 2026"
+    Otherwise returns None.
+    """
+    text_lower = text.lower()
+    match = re.search(
+        r"\b(\d{1,2})\s+"
+        r"(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|"
+        r"jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|"
+        r"nov(?:ember)?|dec(?:ember)?)"
+        r"(?:\s+(\d{4}))?\b",
+        text_lower,
+    )
+    if not match:
+        return None
+
+    day = int(match.group(1))
+    month_text = match.group(2)
+    year_text = match.group(3)
+    year = int(year_text) if year_text else datetime.now().year
+
+    for fmt in ("%d %B %Y", "%d %b %Y"):
+        try:
+            dt = datetime.strptime(f"{day} {month_text} {year}", fmt)
+            return _format_date(dt)
+        except ValueError:
+            continue
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Slot resolution — the core matching function
 # ---------------------------------------------------------------------------
@@ -197,6 +235,7 @@ def resolve_slots(
     all_slots = get_all_available_slots()
     day_pref = _parse_day_preference(user_text)
     time_pref = _parse_time_preference(user_text)
+    specific_date_pref = _parse_specific_date_preference(user_text)
 
     matched = []
 
@@ -208,6 +247,9 @@ def resolve_slots(
             continue
 
         # Filter by day preference
+        if specific_date_pref is not None and slot.date != specific_date_pref:
+            continue
+
         if day_pref is not None:
             if slot_dt.weekday() not in day_pref:
                 continue

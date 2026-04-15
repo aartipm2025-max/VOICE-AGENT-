@@ -13,7 +13,7 @@ from core.booking import (
     build_confirmation_message, build_handoff_message,
     add_to_waitlist, get_all_available_slots, get_waitlist,
     reset_calendar,
-    _parse_day_preference, _parse_time_preference,
+    _parse_day_preference, _parse_time_preference, _parse_specific_date_preference,
 )
 from core.session import Slot, Topic
 
@@ -71,6 +71,11 @@ class TestDayParsing:
         result = _parse_day_preference("tomorrow")
         assert result is not None
         assert len(result) == 1
+
+    def test_specific_date_parsing(self):
+        result = _parse_specific_date_preference("20 april")
+        assert result is not None
+        assert "20 April" in result
 
 
 class TestTimeParsing:

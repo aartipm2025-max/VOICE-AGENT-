@@ -8,6 +8,7 @@ Rules:
 """
 
 import os
+import re
 from core.session import (
     Session, State, Intent, Topic, Slot,
 )
@@ -47,8 +48,22 @@ def _extract_entities(user_text: str, session: Session):
     elif "today" in text_lower:
         session.date = "today"
     
+    # Also capture calendar-style dates like "20 april" / "20 apr 2026".
+    date_match = re.search(
+        r"\b(\d{1,2})\s+"
+        r"(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|"
+        r"jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|"
+        r"nov(?:ember)?|dec(?:ember)?)"
+        r"(?:\s+(\d{4}))?\b",
+        text_lower,
+    )
+    if date_match:
+        day = int(date_match.group(1))
+        month = date_match.group(2)
+        year = date_match.group(3)
+        session.date = f"{day} {month}" + (f" {year}" if year else "")
+
     # 3. Time Extraction
-    import re
     time_match = re.search(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm)', text_lower)
     if time_match:
         session.time = time_match.group(0)
@@ -141,7 +156,15 @@ def _handle_topic_confirmed(user_text: str, session: Session):
     if session.date and session.time:
         session.transition(State.TIME_CAPTURED)
         return _handle_slot_offering(user_text, session)
-    
+
+    if session.date and not session.time:
+        resp = [f"Got it — your topic is {session.topic.value}.", "I noted the date. What time would you prefer? (IST)"]
+        return _respond(resp, session)
+
+    if session.time and not session.date:
+        resp = [f"Got it — your topic is {session.topic.value}.", "I noted the time. What day would you prefer? (IST)"]
+        return _respond(resp, session)
+
     resp = [f"Got it — your topic is {session.topic.value}.", "What day and time would you prefer? (IST)"]
     return _respond(resp, session)
 

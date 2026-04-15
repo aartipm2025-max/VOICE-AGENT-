@@ -96,6 +96,27 @@ class TestBookingFlow:
         assert "slot" in joined or "found" in joined
         assert session.state == State.SLOT_OFFERED
 
+    def test_date_without_time_asks_only_for_time(self):
+        session = fresh_session()
+        handle("", session)
+        handle("book an appointment", session)
+        handle("sip", session)
+        responses = handle("20 april", session)
+        joined = " ".join(responses).lower()
+        assert "what time" in joined
+        assert "topic is sip/mandates" in joined
+
+    def test_date_then_time_moves_to_slot_offering(self):
+        session = fresh_session()
+        handle("", session)
+        handle("book an appointment", session)
+        handle("sip", session)
+        handle("20 april", session)
+        responses = handle("4pm", session)
+        joined = " ".join(responses).lower()
+        assert "slot" in joined or "found" in joined
+        assert session.state == State.SLOT_OFFERED
+
     def test_full_flow_to_booked(self):
         session = fresh_session()
         handle("", session)
