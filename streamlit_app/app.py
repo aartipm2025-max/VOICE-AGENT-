@@ -1,21 +1,15 @@
 import streamlit as st
-import asyncio
 import os
 import sys
-import uuid
 import requests
-import speech_recognition as sr
-import edge_tts
-from dataclasses import dataclass
-from typing import List
 
 # Add parent directory to path to import core logic if needed directly
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Set page config for a premium look
 st.set_page_config(
-    page_title="Advisor Voice Agent",
-    page_icon="🎙️",
+    page_title="Advisor Chat Agent",
+    page_icon="💬",
     layout="centered",
     initial_sidebar_state="collapsed",
 )
@@ -65,21 +59,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Helper: Text to Speech
-async def generate_speech(text: str) -> str:
-    voice = "en-IN-NeerjaNeural"
-    filename = f"resp_{uuid.uuid4().hex}.mp3"
-    communicate = edge_tts.Communicate(text, voice)
-    await communicate.save(filename)
-    return filename
-
 # Initialize session state
 if 'session_id' not in st.session_state:
     st.session_state.session_id = None
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
-if 'audio_to_play' not in st.session_state:
-    st.session_state.audio_to_play = None
 
 def init_backend_session():
     try:
@@ -92,14 +76,12 @@ def init_backend_session():
             responses = msg_res.json().get("responses", [])
             greeting = " ".join(responses)
             st.session_state.chat_history.append({"role": "assistant", "content": greeting})
-            # Generate audio for greeting
-            st.session_state.audio_to_play = asyncio.run(generate_speech(greeting))
     except Exception as e:
         st.error(f"Backend connection failed. Is the API server running? {e}")
 
 # Header
-st.markdown("<h1 class='header-text'>Advisor Voice Agent</h1>", unsafe_allow_html=True)
-st.markdown("<p class='sub-text'>Hands-free compliant appointment scheduling.</p>", unsafe_allow_html=True)
+st.markdown("<h1 class='header-text'>Advisor Chat Agent</h1>", unsafe_allow_html=True)
+st.markdown("<p class='sub-text'>Compliant appointment scheduling over chat.</p>", unsafe_allow_html=True)
 
 # Main Container
 with st.container():
@@ -113,39 +95,19 @@ with st.container():
             with st.chat_message(chat["role"]):
                 st.write(chat["content"])
 
-        # Audio Output (Hidden auto-play)
-        if st.session_state.audio_to_play:
-            st.audio(st.session_state.audio_to_play, format="audio/mp3", autoplay=True)
-            st.session_state.audio_to_play = None
-
-        # Voice Input Component
-        st.write("---")
-        audio_value = st.audio_input("Speak to the Agent")
-        
-        if audio_value:
-            # 1. Transcribe
-            recognizer = sr.Recognizer()
+        user_text = st.chat_input("Type your message")
+        if user_text:
+            st.session_state.chat_history.append({"role": "user", "content": user_text})
             try:
-                with sr.AudioFile(audio_value) as source:
-                    audio_data = recognizer.record(source)
-                    user_text = recognizer.recognize_google(audio_data, language="en-IN")
-                    
-                    if user_text:
-                        st.session_state.chat_history.append({"role": "user", "content": user_text})
-                        
-                        # 2. Call backend
-                        res = requests.post(f"{API_URL}/message", json={
-                            "session_id": st.session_state.session_id,
-                            "text": user_text
-                        })
-                        data = res.json()
-                        assistant_text = " ".join(data["responses"])
-                        st.session_state.chat_history.append({"role": "assistant", "content": assistant_text})
-                        
-                        # 3. Speak
-                        st.session_state.audio_to_play = asyncio.run(generate_speech(assistant_text))
-                        st.rerun()
-                        
+                res = requests.post(
+                    f"{API_URL}/message",
+                    json={"session_id": st.session_state.session_id, "text": user_text},
+                )
+                data = res.json()
+                assistant_text = " ".join(data.get("responses", []))
+                if assistant_text:
+                    st.session_state.chat_history.append({"role": "assistant", "content": assistant_text})
+                st.rerun()
             except Exception as e:
                 st.error(f"Processing error: {e}")
 

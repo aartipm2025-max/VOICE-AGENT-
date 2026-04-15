@@ -12,11 +12,5 @@ google-auth-oauthlib
 fastapi
 uvicorn
 
-# Phase 6 — Voice UI
-gradio
-edge-tts
-SpeechRecognition
-
 # Chat UI
-streamlit
 streamlit

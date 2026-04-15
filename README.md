@@ -1,15 +1,15 @@
-# Advisor Appointment Scheduler — Voice Agent
+# Advisor Appointment Scheduler
 
-A compliant, professional, and intelligent voice assistant designed to help users quickly secure tentative appointments with human advisors. Built with modern AI (Gemini, Sarvam AI) and Model Context Protocol (MCP) tool integrations.
+A compliant, professional, and intelligent assistant designed to help users quickly secure tentative appointments with human advisors. Built with modern AI (Gemini, Sarvam AI) and Model Context Protocol (MCP) tool integrations.
 
 ![Project Banner](https://images.unsplash.com/photo-1589254065878-42c9da997008?q=80&w=2070&auto=format&fit=crop)
 
 ## 🌟 Overview
 
-The **Advisor Appointment Scheduler** is a high-performance voice agent that streamlines the pre-booking process. It handles user intent, enforces strict compliance (PII filtering and disclaimers), and orchestrates real-world side effects through Google Workspace integrations.
+The **Advisor Appointment Scheduler** is a high-performance scheduling agent that streamlines the pre-booking process. It handles user intent, enforces strict compliance (PII filtering and disclaimers), and orchestrates real-world side effects through Google Workspace integrations.
 
 ### Key Highlights:
-- **Zero PII on Call**: No personal data (phone, email, account numbers) is collected during the voice interaction.
+- **Zero PII in Interaction**: No personal data (phone, email, account numbers) is collected during user interaction.
 - **MCP-Powered**: Automatically creates calendar holds, updates logs in Google Sheets, and drafts emails in Gmail.
 - **Multilingual Support**: Designed for high-performance interaction in multiple Indian languages.
 - **State-Driven**: Uses a robust Finite State Machine (FSM) to ensure consistent user flows.
@@ -40,11 +40,11 @@ The agent accurately classifies and manages 5 key core intents:
 
 ## 🏗️ Architecture
 
-The system follows a **"Chat First, Voice Second"** philosophy, where business logic is strictly decoupled from the I/O layer.
+The system follows a **"Core First, Surface Second"** philosophy, where business logic is strictly decoupled from the I/O layer.
 
 ```mermaid
 graph TD
-    User([User Voice/Text]) --> Surface[Surface Layer: Streamlit / API / Voice]
+    User([User Text/API]) --> Surface[Surface Layer: Streamlit / API]
     Surface --> Core[Core Handler]
     subgraph Core
         Gate[Compliance Gates: PII/Advice]
@@ -65,12 +65,9 @@ graph TD
 ## 🛠️ Tech Stack
 
 - **Large Language Model**: [Google Gemini 2.0 Flash](https://ai.google.dev/)
-- **Voice Pipeline**: 
-  - **STT/TTS**: [Sarvam AI](https://www.sarvam.ai/) / [Edge-TTS](https://github.com/rany2/edge-tts)
-  - **VAD**: Silero Voice Activity Detection
 - **Frameworks**: 
   - **Core**: Python 3.10+
-  - **Frontend**: Streamlit (Chat UI), Gradio (Voice UI)
+  - **Frontend**: Streamlit (Chat UI)
   - **Backend**: FastAPI (Phase 5)
 - **APIs**: Google Workspace APIs (via `google-api-python-client`)
 
@@ -113,11 +110,6 @@ graph TD
 streamlit run app.py
 ```
 
-### Voice Interface (Experimental)
-```bash
-python run_voice.py
-```
-
 ### Testing the Core Logic
 ```bash
 pytest tests/
@@ -131,8 +123,8 @@ pytest tests/
 - [x] **Phase 2**: LLM Integration + Intent/Topic Resolution
 - [x] **Phase 3**: Booking Engine + Mock Calendar
 - [x] **Phase 4**: MCP Tool Integration (Google Workspace)
-- [ ] **Phase 5**: REST API Surface (FastAPI)
-- [ ] **Phase 6**: Final Voice Adapter (STT/TTS Optimization)
+- [x] **Phase 5**: REST API Surface (FastAPI)
+- [ ] **Phase 6**: Voice adapter not implemented in this branch
 
 ---
 
