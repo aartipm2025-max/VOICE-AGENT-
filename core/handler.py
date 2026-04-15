@@ -39,7 +39,10 @@ def _extract_entities(user_text: str, session: Session):
 
     # 2. Date Extraction
     text_lower = user_text.lower()
-    if "tomorrow" in text_lower:
+
+    # Accept common shorthand variants users type in chat.
+    tomorrow_aliases = ("tomorrow", "tmrw", "tmr", "tmrw.", "tom")
+    if any(alias in text_lower for alias in tomorrow_aliases):
         session.date = "tomorrow"
     elif "today" in text_lower:
         session.date = "today"

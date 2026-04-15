@@ -87,6 +87,15 @@ class TestBookingFlow:
         # Should either offer slots or ask for time
         assert "slot" in joined or "time" in joined or "found" in joined
 
+    def test_topic_then_tmrw_time_offers_slots(self):
+        session = fresh_session()
+        handle("", session)
+        handle("I want to book an appointment for KYC", session)
+        responses = handle("tmrw 4pm", session)
+        joined = " ".join(responses).lower()
+        assert "slot" in joined or "found" in joined
+        assert session.state == State.SLOT_OFFERED
+
     def test_full_flow_to_booked(self):
         session = fresh_session()
         handle("", session)
