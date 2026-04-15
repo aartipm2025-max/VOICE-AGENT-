@@ -162,10 +162,16 @@ def _handle_topic_confirmed(user_text: str, session: Session):
         return _respond(resp, session)
 
     if session.time and not session.date:
-        resp = [f"Got it — your topic is {session.topic.value}.", "I noted the time. What day would you prefer? (IST)"]
+        resp = [
+            f"Got it — your topic is {session.topic.value}.",
+            "Please tell me date so that I can tell you available time slot.",
+        ]
         return _respond(resp, session)
 
-    resp = [f"Got it — your topic is {session.topic.value}.", "What day and time would you prefer? (IST)"]
+    resp = [
+        f"Got it — your topic is {session.topic.value}.",
+        "Please tell me date so that I can tell you available time slot.",
+    ]
     return _respond(resp, session)
 
 def _handle_slot_offering(user_text: str, session: Session):

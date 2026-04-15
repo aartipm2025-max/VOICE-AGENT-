@@ -177,6 +177,42 @@ def _parse_time_preference(text: str) -> tuple[int, int] | None:
     return None
 
 
+def _parse_exact_time_preference(text: str) -> str | None:
+    """
+    Parse an explicit clock time and normalize it to slot format, e.g.:
+      - "4pm" -> "4:00 PM"
+      - "4:30 pm" -> "4:30 PM"
+      - "16:00" -> "4:00 PM"
+    Returns None if no explicit time is found.
+    """
+    text_lower = text.lower()
+
+    # Match "4 PM", "4:00 PM", "4:30pm"
+    match = re.search(r"(\d{1,2})(?::(\d{2}))?\s*(am|pm)", text_lower)
+    if match:
+        hour = int(match.group(1))
+        minute = int(match.group(2)) if match.group(2) else 0
+        ampm = match.group(3)
+
+        if ampm == "pm" and hour != 12:
+            hour += 12
+        elif ampm == "am" and hour == 12:
+            hour = 0
+
+        if not (0 <= hour <= 23 and 0 <= minute <= 59):
+            return None
+        return datetime.now().replace(hour=hour, minute=minute).strftime("%I:%M %p").lstrip("0")
+
+    # Match 24h format "16:00"
+    match_24h = re.search(r"\b([01]?\d|2[0-3]):([0-5]\d)\b", text_lower)
+    if match_24h:
+        hour = int(match_24h.group(1))
+        minute = int(match_24h.group(2))
+        return datetime.now().replace(hour=hour, minute=minute).strftime("%I:%M %p").lstrip("0")
+
+    return None
+
+
 def _parse_specific_date_preference(text: str) -> str | None:
     """
     Parse exact calendar-style date text like:
@@ -235,6 +271,7 @@ def resolve_slots(
     all_slots = get_all_available_slots()
     day_pref = _parse_day_preference(user_text)
     time_pref = _parse_time_preference(user_text)
+    exact_time_pref = _parse_exact_time_preference(user_text)
     specific_date_pref = _parse_specific_date_preference(user_text)
 
     matched = []
@@ -254,7 +291,11 @@ def resolve_slots(
             if slot_dt.weekday() not in day_pref:
                 continue
 
-        # Filter by time preference
+        # If user gave an explicit time, honor it exactly.
+        if exact_time_pref is not None and slot.time != exact_time_pref:
+            continue
+
+        # Otherwise use broader time preference matching.
         if time_pref is not None:
             start_h, end_h = time_pref
             # Parse slot time

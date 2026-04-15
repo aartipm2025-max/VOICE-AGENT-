@@ -106,6 +106,23 @@ class TestBookingFlow:
         assert "what time" in joined
         assert "topic is sip/mandates" in joined
 
+    def test_topic_prompt_asks_for_date_first(self):
+        session = fresh_session()
+        handle("", session)
+        handle("book an appointment", session)
+        responses = handle("sip", session)
+        joined = " ".join(responses).lower()
+        assert "please tell me date so that i can tell you available time slot" in joined
+
+    def test_time_without_date_asks_for_date(self):
+        session = fresh_session()
+        handle("", session)
+        handle("book an appointment", session)
+        handle("sip", session)
+        responses = handle("4pm", session)
+        joined = " ".join(responses).lower()
+        assert "please tell me date so that i can tell you available time slot" in joined
+
     def test_date_then_time_moves_to_slot_offering(self):
         session = fresh_session()
         handle("", session)

@@ -13,7 +13,7 @@ from core.booking import (
     build_confirmation_message, build_handoff_message,
     add_to_waitlist, get_all_available_slots, get_waitlist,
     reset_calendar,
-    _parse_day_preference, _parse_time_preference, _parse_specific_date_preference,
+    _parse_day_preference, _parse_time_preference, _parse_exact_time_preference, _parse_specific_date_preference,
 )
 from core.session import Slot, Topic
 
@@ -104,6 +104,10 @@ class TestTimeParsing:
         result = _parse_time_preference("anytime")
         assert result is None
 
+    def test_exact_time_parser(self):
+        assert _parse_exact_time_preference("4pm") == "4:00 PM"
+        assert _parse_exact_time_preference("4:30 pm") == "4:30 PM"
+
 
 class TestSlotResolution:
 
@@ -138,6 +142,11 @@ class TestSlotResolution:
         for slot in slots:
             t = datetime.strptime(slot.time.strip(), "%I:%M %p")
             assert t.hour >= 12, f"{slot.time} is not afternoon"
+
+    def test_exact_time_preference_is_honored(self):
+        slots = resolve_slots("4pm")
+        assert len(slots) > 0
+        assert all(slot.time == "4:00 PM" for slot in slots)
 
 
 class TestBookingCodeGenerator:
