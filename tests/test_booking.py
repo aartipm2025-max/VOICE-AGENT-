@@ -148,6 +148,15 @@ class TestSlotResolution:
         assert len(slots) > 0
         assert all(slot.time == "4:00 PM" for slot in slots)
 
+    def test_specific_weekday_date_always_returns_slots(self):
+        slots = resolve_slots("1 january 2030", max_slots=5)  # Tuesday
+        assert len(slots) > 0
+        assert all(slot.date == "Tuesday, 01 January 2030" for slot in slots)
+
+    def test_specific_weekend_date_returns_no_slots(self):
+        slots = resolve_slots("5 january 2030", max_slots=5)  # Saturday
+        assert slots == []
+
 
 class TestBookingCodeGenerator:
 

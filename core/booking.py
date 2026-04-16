@@ -269,6 +269,27 @@ def resolve_slots(
     exact_time_pref = _parse_exact_time_preference(user_text)
     specific_date_pref = _parse_specific_date_preference(user_text)
 
+    # If user gave an explicit calendar date, build availability for that exact date
+    # so weekday dates are always serviceable (not restricted to next-7-day pool).
+    if specific_date_pref is not None:
+        try:
+            specific_dt = datetime.strptime(specific_date_pref, "%A, %d %B %Y")
+        except ValueError:
+            specific_dt = None
+
+        if specific_dt is not None:
+            # Weekend policy: no advisor slots on Saturday/Sunday.
+            if specific_dt.weekday() >= 5:
+                return []
+
+            all_slots = []
+            for hour, minute in _AVAILABLE_HOURS:
+                time_str = _format_time(hour, minute)
+                if (specific_date_pref, time_str) in _booked_slots:
+                    continue
+                advisor = random.choice(_ADVISORS)
+                all_slots.append(Slot(date=specific_date_pref, time=time_str, advisor_id=advisor))
+
     matched = []
 
     for slot in all_slots:
