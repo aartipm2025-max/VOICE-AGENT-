@@ -26,16 +26,11 @@ from config import TIMEZONE
 
 # Time windows advisors are available (24h format)
 _AVAILABLE_HOURS = [
-    (10, 0),   # 10:00 AM
-    (10, 30),  # 10:30 AM
-    (11, 0),   # 11:00 AM
-    (11, 30),  # 11:30 AM
-    (14, 0),   # 2:00 PM
-    (14, 30),  # 2:30 PM
-    (15, 0),   # 3:00 PM
-    (15, 30),  # 3:30 PM
-    (16, 0),   # 4:00 PM
-    (16, 30),  # 4:30 PM
+    (22, 0),  # 10:00 PM
+    (23, 0),  # 11:00 PM
+    (13, 0),  # 1:00 PM
+    (15, 0),  # 3:00 PM
+    (16, 0),  # 4:00 PM
 ]
 
 _ADVISORS = ["ADV-01", "ADV-02", "ADV-03"]
@@ -165,14 +160,14 @@ def _parse_time_preference(text: str) -> tuple[int, int] | None:
         elif ampm == "am" and hour == 12:
             hour = 0
         # Give a 2-hour window around the requested time
-        return (max(10, hour - 1), min(17, hour + 1))
+        return (max(0, hour - 1), min(23, hour + 1))
 
     # Match 24h format "15:00"
     match = re.search(r'(\d{2}):(\d{2})', text_lower)
     if match:
         hour = int(match.group(1))
-        if 10 <= hour <= 17:
-            return (max(10, hour - 1), min(17, hour + 1))
+        if 0 <= hour <= 23:
+            return (max(0, hour - 1), min(23, hour + 1))
 
     return None
 
