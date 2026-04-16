@@ -71,6 +71,12 @@ class TestFSMTransitions:
     def test_slot_offered_to_confirmation_pending_is_valid(self):
         assert is_valid_transition(State.SLOT_OFFERED, State.CONFIRMATION_PENDING)
 
+    def test_slot_offered_to_booking_failed_is_valid(self):
+        assert is_valid_transition(State.SLOT_OFFERED, State.BOOKING_FAILED)
+
+    def test_booking_failed_to_availability_view_is_valid(self):
+        assert is_valid_transition(State.BOOKING_FAILED, State.AVAILABILITY_VIEW)
+
     def test_confirmation_pending_to_booked_is_valid(self):
         assert is_valid_transition(State.CONFIRMATION_PENDING, State.BOOKED)
 

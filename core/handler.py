@@ -9,6 +9,7 @@ Rules:
 
 import os
 import re
+from typing import Optional
 from core.session import (
     Session, State, Intent, Topic, Slot,
 )
@@ -86,6 +87,70 @@ def _is_repetition(user_text: str, session: Session) -> bool:
             
     return False
 
+
+def _is_availability_query(user_text: str) -> bool:
+    """Detect explicit availability-checking language in any state."""
+    text_lower = user_text.lower()
+    availability_phrases = (
+        "what slots are available",
+        "which slots are available",
+        "any available time",
+        "show slots",
+        "show me slots",
+        "available slots",
+        "what times are available",
+        "availability",
+        "free slots",
+        "open slots",
+    )
+    return any(phrase in text_lower for phrase in availability_phrases)
+
+
+def _format_date_short(date_text: str) -> str:
+    """Convert full slot date text to a compact user-facing format."""
+    if not date_text:
+        return "that date"
+    try:
+        from datetime import datetime
+        dt = datetime.strptime(date_text, "%A, %d %B %Y")
+        return dt.strftime("%d %b").lstrip("0")
+    except ValueError:
+        return date_text
+
+
+def _show_available_slots_for_current_context(session: Session, lead_text: Optional[str] = None) -> list[str]:
+    """
+    Reuse selected topic/date and list available times.
+    Never asks for topic/date again when already known.
+    """
+    if not session.topic or not session.date:
+        session.transition(State.TOPIC_CONFIRMED)
+        return _respond("Please share topic and date so I can show available slots.", session)
+
+    pref = f"{session.date} any time"
+    slots = resolve_slots(pref, max_slots=6)
+    if not slots:
+        session.transition(State.TOPIC_CONFIRMED)
+        session.offered_slots = []
+        session.chosen_slot = None
+        return _respond(
+            f"I could not find available slots for {session.topic.value} on {session.date}. "
+            "Please share another date.",
+            session,
+        )
+
+    session.offered_slots = slots
+    session.chosen_slot = None
+    session.transition(State.AVAILABILITY_VIEW)
+    date_label = _format_date_short(slots[0].date)
+    times = ", ".join(slot.time for slot in slots)
+    messages = []
+    if lead_text:
+        messages.append(lead_text)
+    messages.append(f"Here are available slots on {date_label}: {times}.")
+    messages.append("Tell me which time you want me to book.")
+    return _respond(messages, session)
+
 # ---------------------------------------------------------------------------
 # Main Handle Logic
 # ---------------------------------------------------------------------------
@@ -114,6 +179,9 @@ def handle(user_text: str, session: Session) -> list[str]:
         
     elif session.state == State.TIME_CAPTURED or session.state == State.SLOT_OFFERED:
         return _handle_slot_offering(user_text, session)
+
+    elif session.state == State.BOOKING_FAILED or session.state == State.AVAILABILITY_VIEW:
+        return _handle_booking_recovery(user_text, session)
         
     elif session.state == State.CONFIRMATION_PENDING:
         return _handle_confirmation(user_text, session)
@@ -176,6 +244,8 @@ def _handle_topic_confirmed(user_text: str, session: Session):
 
 def _handle_slot_offering(user_text: str, session: Session):
     """SLOT_OFFERED: Handles both initial slot resolution and user's slot selection."""
+    if _is_availability_query(user_text):
+        return _show_available_slots_for_current_context(session)
     
     # ── If slots are already offered, interpret user response as selection ──
     if session.state == State.SLOT_OFFERED and session.offered_slots:
@@ -205,7 +275,17 @@ def _handle_slot_offering(user_text: str, session: Session):
     slots = resolve_slots(pref)
     
     if not slots:
-        return _respond("I'm sorry, no slots match. Try another time?", session)
+        session.transition(State.BOOKING_FAILED)
+        fallback_pref = f"{session.date or ''} any time"
+        fallback_slots = resolve_slots(fallback_pref, max_slots=6)
+        if fallback_slots:
+            session.offered_slots = fallback_slots
+            lead = f"{session.time or 'That time'} is unavailable."
+            return _show_available_slots_for_current_context(
+                session,
+                lead_text=lead,
+            )
+        return _respond("I'm sorry, no slots match for that date. Try another day?", session)
         
     session.offered_slots = slots
     session.transition(State.SLOT_OFFERED)
@@ -217,6 +297,11 @@ def _handle_slot_offering(user_text: str, session: Session):
 def _handle_confirmation(user_text: str, session: Session):
     """CONFIRMATION_PENDING: Flexible logic."""
     text_lower = user_text.lower()
+
+    # Availability intent should not be interpreted as booking confirmation.
+    if _is_availability_query(user_text):
+        session.transition(State.AVAILABILITY_VIEW)
+        return _show_available_slots_for_current_context(session)
     
     # Handle auto-selection from previous state
     if user_text == "yes" and not session.chosen_slot:
@@ -283,6 +368,17 @@ def _handle_confirmation(user_text: str, session: Session):
     # Otherwise, ask again nicely
     session.transition(State.CONFIRMATION_PENDING)
     return _respond(f"Shall I book your {session.topic.value} session for {session.chosen_slot.time}?", session)
+
+
+def _handle_booking_recovery(user_text: str, session: Session):
+    """Handles BOOKING_FAILED/AVAILABILITY_VIEW follow-ups."""
+    if _is_availability_query(user_text):
+        session.transition(State.AVAILABILITY_VIEW)
+        return _show_available_slots_for_current_context(session)
+
+    # Reuse existing slot selection behavior when user picks one of shown options.
+    session.transition(State.SLOT_OFFERED)
+    return _handle_slot_offering(user_text, session)
 
 # ---------------------------------------------------------------------------
 # Helpers

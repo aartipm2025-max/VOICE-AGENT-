@@ -45,7 +45,9 @@ _INTENT_KEYWORDS: list[tuple[Intent, list[str]]] = [
     (Intent.WHAT_TO_PREPARE,    ["prepare", "bring", "need to have",
                                  "what should i"]),
     (Intent.CHECK_AVAILABILITY, ["available", "availability", "free slots",
-                                 "open slots", "what times", "when can"]),
+                                 "open slots", "what times", "when can",
+                                 "show slots", "any available time",
+                                 "slots are available", "show me slots"]),
     (Intent.BOOK_NEW,           ["book", "schedule", "appointment", "new slot",
                                  "set up", "arrange"]),
 ]

@@ -21,6 +21,8 @@ class State(Enum):
     TOPIC_CONFIRMED      = auto()
     TIME_CAPTURED        = auto()
     SLOT_OFFERED         = auto()
+    BOOKING_FAILED       = auto()
+    AVAILABILITY_VIEW    = auto()
     CONFIRMATION_PENDING = auto()
     BOOKED               = auto()
     CANCEL_FLOW          = auto()
@@ -102,8 +104,10 @@ VALID_TRANSITIONS: dict[State, list[State]] = {
     State.START:                [State.TOPIC_CONFIRMED, State.CANCEL_FLOW],
     State.TOPIC_CONFIRMED:      [State.TIME_CAPTURED, State.SLOT_OFFERED],
     State.TIME_CAPTURED:        [State.SLOT_OFFERED],
-    State.SLOT_OFFERED:         [State.CONFIRMATION_PENDING, State.TIME_CAPTURED],
-    State.CONFIRMATION_PENDING: [State.BOOKED, State.START],
+    State.SLOT_OFFERED:         [State.CONFIRMATION_PENDING, State.TIME_CAPTURED, State.BOOKING_FAILED],
+    State.BOOKING_FAILED:       [State.AVAILABILITY_VIEW, State.TOPIC_CONFIRMED, State.SLOT_OFFERED],
+    State.AVAILABILITY_VIEW:    [State.SLOT_OFFERED, State.TOPIC_CONFIRMED, State.CONFIRMATION_PENDING],
+    State.CONFIRMATION_PENDING: [State.BOOKED, State.START, State.BOOKING_FAILED, State.SLOT_OFFERED],
     State.BOOKED:               [State.ENDED],
     State.CANCEL_FLOW:          [State.ENDED, State.START],
     State.ENDED:                [],

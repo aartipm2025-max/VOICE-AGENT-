@@ -134,6 +134,33 @@ class TestBookingFlow:
         assert "slot" in joined or "found" in joined
         assert session.state == State.SLOT_OFFERED
 
+    def test_unavailable_time_offers_available_slots_same_date(self):
+        session = fresh_session()
+        handle("", session)
+        handle("book appointment for KYC", session)
+        responses = handle("20 april 9pm", session)
+        joined = " ".join(responses).lower()
+
+        assert "unavailable" in joined
+        assert "available slots" in joined
+        assert session.state == State.AVAILABILITY_VIEW
+        assert len(session.offered_slots) > 0
+
+    def test_after_failed_booking_availability_query_shows_slots(self):
+        session = fresh_session()
+        handle("", session)
+        handle("book appointment for SIP", session)
+        handle("20 april 9pm", session)  # should fail exact-time match and enter recovery
+
+        responses = handle("what slots are available", session)
+        joined = " ".join(responses).lower()
+
+        assert "available slots" in joined
+        assert "tell me which time" in joined
+        assert session.state == State.AVAILABILITY_VIEW
+        assert session.topic == Topic.SIP_MANDATES
+        assert session.date is not None
+
     def test_full_flow_to_booked(self):
         session = fresh_session()
         handle("", session)
