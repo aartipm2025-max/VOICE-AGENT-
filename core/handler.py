@@ -118,7 +118,11 @@ def _format_date_short(date_text: str) -> str:
         return date_text
 
 
-def _show_available_slots_for_current_context(session: Session, lead_text: Optional[str] = None) -> list[str]:
+def _show_available_slots_for_current_context(
+    session: Session,
+    lead_text: Optional[str] = None,
+    max_slots: int = 6,
+) -> list[str]:
     """
     Reuse selected topic/date and list available times.
     Never asks for topic/date again when already known.
@@ -128,7 +132,7 @@ def _show_available_slots_for_current_context(session: Session, lead_text: Optio
         return _respond("Please share topic and date so I can show available slots.", session)
 
     pref = f"{session.date} any time"
-    slots = resolve_slots(pref, max_slots=6)
+    slots = resolve_slots(pref, max_slots=max_slots)
     if not slots:
         session.transition(State.TOPIC_CONFIRMED)
         session.offered_slots = []
@@ -226,8 +230,11 @@ def _handle_topic_confirmed(user_text: str, session: Session):
         return _handle_slot_offering(user_text, session)
 
     if session.date and not session.time:
-        resp = [f"Got it — your topic is {session.topic.value}.", "I noted the date. What time would you prefer? (IST)"]
-        return _respond(resp, session)
+        return _show_available_slots_for_current_context(
+            session,
+            lead_text=f"Got it — your topic is {session.topic.value}. I noted the date.",
+            max_slots=4,
+        )
 
     if session.time and not session.date:
         resp = [
@@ -263,6 +270,21 @@ def _handle_slot_offering(user_text: str, session: Session):
             session.chosen_slot = session.offered_slots[1]
             session.transition(State.CONFIRMATION_PENDING)
             return _handle_confirmation("yes", session)
+
+        # Detect explicit time selection against shown slot times (e.g., "4pm").
+        normalized_text = text_lower.replace(" ", "")
+        for offered in session.offered_slots:
+            offered_time = offered.time.lower()
+            offered_time_compact = offered_time.replace(" ", "")
+            offered_time_short = offered_time_compact.replace(":00", "")
+            if (
+                offered_time in text_lower
+                or offered_time_compact in normalized_text
+                or offered_time_short in normalized_text
+            ):
+                session.chosen_slot = offered
+                session.transition(State.CONFIRMATION_PENDING)
+                return _handle_confirmation("yes", session)
         
         # Default: select slot 1 for any affirmative / selection response
         # ("yes", "first", "1", "book", "confirm", "ok", "sure", topic repetition, etc.)

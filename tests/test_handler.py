@@ -103,8 +103,10 @@ class TestBookingFlow:
         handle("sip", session)
         responses = handle("20 april", session)
         joined = " ".join(responses).lower()
-        assert "what time" in joined
-        assert "topic is sip/mandates" in joined
+        assert "available slots" in joined
+        assert "tell me which time you want me to book" in joined
+        assert len(session.offered_slots) == 4
+        assert session.state == State.AVAILABILITY_VIEW
 
     def test_topic_prompt_asks_for_date_first(self):
         session = fresh_session()
@@ -131,8 +133,8 @@ class TestBookingFlow:
         handle("20 april", session)
         responses = handle("4pm", session)
         joined = " ".join(responses).lower()
-        assert "slot" in joined or "found" in joined
-        assert session.state == State.SLOT_OFFERED
+        assert "slot" in joined or "found" in joined or "booking is confirmed" in joined
+        assert session.state in [State.SLOT_OFFERED, State.CONFIRMATION_PENDING, State.BOOKED]
 
     def test_unavailable_time_offers_available_slots_same_date(self):
         session = fresh_session()
