@@ -204,20 +204,13 @@ def _process_user_message(prompt: str):
     st.rerun()
 
 
-# Voice controls styling for ChatGPT feel
-st.markdown("<div style='display: flex; justify-content: center; margin-top: 10px;'>", unsafe_allow_html=True)
-voice_col_1, voice_col_2 = st.columns([1, 4])
-with voice_col_1:
-    voice_audio = st.audio_input("🎙️")
-with voice_col_2:
-    speak_responses = st.toggle("🔊 Audio Responses", value=True)
-st.markdown("</div>", unsafe_allow_html=True)
+# Minimalist Voice Input
+voice_audio = st.audio_input("🎙️ Tap to speak")
 
 if voice_audio is not None and st.button("Send Audio", use_container_width=True):
     with st.spinner("Transcribing..."):
         transcript = _transcribe_voice_input(voice_audio)
     if transcript:
-        st.caption(f"You said: {html.escape(transcript)}")
         _process_user_message(transcript)
     else:
         st.warning("Could not transcribe voice. Please try again or type your message.")
@@ -226,14 +219,13 @@ if voice_audio is not None and st.button("Send Audio", use_container_width=True)
 if prompt := st.chat_input("Type your message to the advisor..."):
     _process_user_message(prompt)
 
-# Speak only the newest assistant reply once per rerun.
-if speak_responses:
-    assistant_indices = [i for i, msg in enumerate(st.session_state.messages) if msg["role"] == "assistant"]
-    if assistant_indices:
-        latest_assistant_idx = assistant_indices[-1]
-        if latest_assistant_idx > st.session_state.last_spoken_assistant_idx:
-            st.session_state.last_spoken_assistant_idx = latest_assistant_idx
-            _speak_text_block(st.session_state.messages[latest_assistant_idx]["content"])
+# Always speak the newest assistant reply once per rerun.
+assistant_indices = [i for i, msg in enumerate(st.session_state.messages) if msg["role"] == "assistant"]
+if assistant_indices:
+    latest_assistant_idx = assistant_indices[-1]
+    if latest_assistant_idx > st.session_state.last_spoken_assistant_idx:
+        st.session_state.last_spoken_assistant_idx = latest_assistant_idx
+        _speak_text_block(st.session_state.messages[latest_assistant_idx]["content"])
 
 # Post-booking email capture flow
 session = get_session(st.session_state.session_id)
