@@ -83,67 +83,45 @@ st.markdown("<p class='sub-header'>Compliant appointment scheduling</p>", unsafe
 
 def _transcribe_voice_input(audio_file) -> str:
     """
-    Transcribe microphone audio using Gemini.
+    Transcribe microphone audio using Groq Whisper.
     Returns empty string when transcription cannot be produced.
     """
     if audio_file is None:
         return ""
 
     try:
-        from google import genai
-        from google.genai import types
+        from groq import Groq
     except Exception:
-        st.error("Voice transcription is unavailable because google-genai is not installed.")
+        st.error("Voice transcription is unavailable because groq is not installed.")
         return ""
 
-    api_key = st.secrets.get("GEMINI_API_KEY", None) or st.secrets.get("GOOGLE_API_KEY", None)
+    api_key = st.secrets.get("GROQ_API_KEY", None)
     if not api_key:
         import os
-        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
-        st.error("Set GEMINI_API_KEY (or GOOGLE_API_KEY) to enable voice transcription.")
+        st.error("Set GROQ_API_KEY to enable voice transcription.")
         return ""
 
     try:
-        audio_bytes = audio_file.read()
-        if not audio_bytes:
+        client = Groq(api_key=api_key)
+        
+        # Streamlit's audio_input returns a file-like object (UploadedFile)
+        # Groq expects a tuple of (filename, file_data)
+        file_data = audio_file.read()
+        if not file_data:
             return ""
-
-        client = genai.Client(api_key=api_key)
-        prompt = (
-            "Transcribe this user audio to plain text exactly as spoken. "
-            "Return only transcript text with no commentary."
+            
+        transcription = client.audio.transcriptions.create(
+            file=("audio.wav", file_data),
+            model="whisper-large-v3-turbo",
+            response_format="text",
+            language="en"
         )
+        return transcription.strip()
         
-        models_to_try = ["gemini-2.0-flash"]
-        last_error = None
-        
-        for model_name in models_to_try:
-            try:
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=[
-                        prompt,
-                        types.Part.from_bytes(data=audio_bytes, mime_type=audio_file.type or "audio/wav"),
-                    ],
-                )
-                transcript = (response.text or "").strip()
-                return transcript
-            except Exception as exc:
-                last_error = exc
-                err_str = str(exc)
-                if "429" in err_str or "quota" in err_str.lower():
-                    continue  # Move to the next fallback model
-                else:
-                    st.error(f"Voice transcription failed ({model_name}): {exc}")
-                    return ""
-                    
-        # If we exhausted the loop due to quotas
-        if last_error:
-            st.error("Voice transcription failed: API Quota Exhausted. Please wait about 45-60 seconds before trying again.")
-        return ""
     except Exception as e:
-        st.error(f"Error reading audio or connecting to API: {e}")
+        st.error(f"Voice transcription failed (Groq): {e}")
         return ""
 
 

@@ -15,18 +15,18 @@ _llm_available = None
 
 
 def _get_llm_client():
-    """Lazy-initialize Google Gemini client."""
+    """Lazy-initialize Groq client."""
     global _llm_client, _llm_available
     if _llm_available is not None:
         return _llm_client
 
     try:
-        from google import genai
-        api_key = os.environ.get("GEMINI_API_KEY")
+        from groq import Groq
+        api_key = os.environ.get("GROQ_API_KEY")
         if not api_key:
             _llm_available = False
             return None
-        _llm_client = genai.Client(api_key=api_key)
+        _llm_client = Groq(api_key=api_key)
         _llm_available = True
         return _llm_client
     except (ImportError, Exception):
@@ -92,23 +92,24 @@ def classify_intent(user_text: str) -> Intent:
 
     try:
         prompt = INTENT_CLASSIFICATION_PROMPT.format(user_text=user_text)
-        models_to_try = ["gemini-2.0-flash"]
+        models_to_try = ["llama3-8b-8192"]
         result = None
         
         for model_name in models_to_try:
             try:
-                response = client.models.generate_content(
+                response = client.chat.completions.create(
                     model=model_name,
-                    contents=prompt,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.0
                 )
-                result = response.text.strip().lower()
+                result = response.choices[0].message.content.strip().lower()
                 break
             except Exception as e:
                 err_str = str(e).lower()
                 if "429" in err_str or "quota" in err_str:
-                    continue  # Try fallback model
+                    continue
                 else:
-                    break  # Stop trying models on non-quota errors
+                    break
 
         if result is None:
             return _keyword_fallback(user_text)
