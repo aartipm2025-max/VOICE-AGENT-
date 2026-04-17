@@ -142,6 +142,9 @@ def _transcribe_voice_input(audio_file) -> str:
         if last_error:
             st.error("Voice transcription failed: API Quota Exhausted. Please wait about 45-60 seconds before trying again.")
         return ""
+    except Exception as e:
+        st.error(f"Error reading audio or connecting to API: {e}")
+        return ""
 
 
 def _speak_text_block(text: str):
