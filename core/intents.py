@@ -92,7 +92,7 @@ def classify_intent(user_text: str) -> Intent:
 
     try:
         prompt = INTENT_CLASSIFICATION_PROMPT.format(user_text=user_text)
-        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash"]
+        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash-latest"]
         result = None
         
         for model_name in models_to_try:

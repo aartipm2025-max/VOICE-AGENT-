@@ -115,7 +115,7 @@ def _transcribe_voice_input(audio_file) -> str:
             "Return only transcript text with no commentary."
         )
         
-        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash"]
+        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash-latest"]
         last_error = None
         
         for model_name in models_to_try:
