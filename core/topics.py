@@ -94,11 +94,26 @@ def classify_topic(user_text: str) -> Topic | None:
 
     try:
         prompt = TOPIC_CLASSIFICATION_PROMPT.format(user_text=user_text)
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
-        )
-        result = response.text.strip().lower()
+        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash"]
+        result = None
+        
+        for model_name in models_to_try:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                )
+                result = response.text.strip().lower()
+                break
+            except Exception as e:
+                err_str = str(e).lower()
+                if "429" in err_str or "quota" in err_str:
+                    continue  # Try fallback model
+                else:
+                    break
+
+        if result is None:
+            return _keyword_fallback(user_text)
 
         # LLM should return a number 1-5 or "unclear"
         if result in _LLM_TOPIC_MAP:

@@ -20,46 +20,54 @@ API_URL = "http://127.0.0.1:8000"
 # Custom CSS for Glassmorphism & Aesthetics
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
     .stApp {
         background: #ffffff;
-        color: #000000;
-    }
-    .glass-card {
-        background: #ffffff;
-        border: 1px solid #000000;
-        border-radius: 20px;
-        padding: 2rem;
-        margin-bottom: 1rem;
+        color: #0d0d0d;
     }
     .header-text {
-        font-weight: 800;
-        font-size: 2.5rem;
-        color: #000000;
+        font-weight: 600;
+        font-size: 2rem;
+        color: #0d0d0d;
         text-align: center;
         margin-bottom: 0;
     }
     .sub-text {
-        color: #000000;
+        color: #666666;
         text-align: center;
-        font-size: 1.1rem;
+        font-size: 1rem;
         margin-bottom: 2rem;
     }
+    /* ChatGPT-like Chat Messages */
     div[data-testid="stChatMessage"] {
-        border: 1px solid #000000;
-        background: #f3f4f6;
-        color: #000000;
+        background-color: transparent !important;
+        border: none !important;
+        padding: 1rem 0 !important;
+        margin-bottom: 0 !important;
     }
     .stChatInputContainer {
-        border: 1px solid #000000 !important;
+        border-radius: 24px !important;
+        border: 1px solid #e5e5e5 !important;
         background: #ffffff !important;
+        box-shadow: 0 0 15px rgba(0,0,0,0.05) !important;
+        padding: 4px 8px;
     }
     .stButton > button {
-        background: #000000 !important;
-        color: #ffffff !important;
-        border: 1px solid #000000 !important;
+        background: #f3f4f6 !important;
+        color: #0d0d0d !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 500 !important;
+    }
+    .stButton > button:hover {
+        background: #e5e5e5 !important;
     }
     .stChatInput textarea {
-        color: #000000 !important;
+        color: #0d0d0d !important;
         background: #ffffff !important;
     }
     /* Hide Streamlit elements for cleaner look */
@@ -113,7 +121,8 @@ with st.container():
     else:
         # Chat display
         for chat in st.session_state.chat_history:
-            with st.chat_message(chat["role"]):
+            avatar = "👤" if chat["role"] == "user" else "✨"
+            with st.chat_message(chat["role"], avatar=avatar):
                 st.write(chat["content"])
 
         user_text = st.chat_input("Type your message")

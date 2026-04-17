@@ -12,77 +12,73 @@ st.set_page_config(
     layout="centered"
 )
 
-# Custom CSS for premium aesthetics
+# Custom CSS for ChatGPT-like aesthetics
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
     }
     .stApp {
         background: #ffffff;
-        color: #000000;
+        color: #0d0d0d;
     }
     .header-style {
         text-align: center;
-        color: #000000;
-        font-weight: 800;
-        font-size: 2.8rem;
+        color: #0d0d0d;
+        font-weight: 600;
+        font-size: 2rem;
         padding-bottom: 0;
         margin-bottom: 0;
     }
     .sub-header {
         text-align: center;
-        color: #000000;
-        font-size: 1.1rem;
+        color: #666666;
+        font-size: 1rem;
         margin-bottom: 2rem;
     }
+    /* ChatGPT-like Chat Messages */
     div[data-testid="stChatMessage"] {
-        border-radius: 14px;
-        padding: 8px 16px;
-        margin-bottom: 8px;
-        border: 1px solid #000000;
-        background: #f3f4f6;
-        color: #000000;
+        background-color: transparent !important;
+        border: none !important;
+        padding: 1rem 0 !important;
+        margin-bottom: 0 !important;
     }
     .stChatInputContainer {
-        border-radius: 14px !important;
-        border: 1px solid #000000 !important;
+        border-radius: 24px !important;
+        border: 1px solid #e5e5e5 !important;
         background: #ffffff !important;
+        box-shadow: 0 0 15px rgba(0,0,0,0.05) !important;
+        padding: 4px 8px;
     }
     .status-badge {
         display: inline-block;
         padding: 4px 12px;
-        border-radius: 20px;
         font-size: 0.75rem;
-        font-weight: 600;
+        font-weight: 500;
+        color: #8e8ea0;
         margin-bottom: 1rem;
     }
-    .status-active {
-        background: #ffffff;
-        color: #000000;
-        border: 1px solid #000000;
-    }
-    .status-ended {
-        background: #000000;
-        color: #ffffff;
-        border: 1px solid #000000;
-    }
     .stButton > button {
-        background: #000000 !important;
-        color: #ffffff !important;
-        border: 1px solid #000000 !important;
+        background: #f3f4f6 !important;
+        color: #0d0d0d !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 500 !important;
+    }
+    .stButton > button:hover {
+        background: #e5e5e5 !important;
     }
     .stChatInput textarea {
-        color: #000000 !important;
+        color: #0d0d0d !important;
         background: #ffffff !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1 class='header-style'>💼 Advisor Chat Agent</h1>", unsafe_allow_html=True)
-st.markdown("<p class='sub-header'>Compliant appointment scheduling — powered by AI.</p>", unsafe_allow_html=True)
+st.markdown("<h1 class='header-style'>Advisor Chat</h1>", unsafe_allow_html=True)
+st.markdown("<p class='sub-header'>Compliant appointment scheduling</p>", unsafe_allow_html=True)
 
 
 def _transcribe_voice_input(audio_file) -> str:
@@ -118,17 +114,33 @@ def _transcribe_voice_input(audio_file) -> str:
             "Transcribe this user audio to plain text exactly as spoken. "
             "Return only transcript text with no commentary."
         )
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=[
-                prompt,
-                types.Part.from_bytes(data=audio_bytes, mime_type=audio_file.type or "audio/wav"),
-            ],
-        )
-        transcript = (response.text or "").strip()
-        return transcript
-    except Exception as exc:
-        st.error(f"Voice transcription failed: {exc}")
+        
+        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash"]
+        last_error = None
+        
+        for model_name in models_to_try:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[
+                        prompt,
+                        types.Part.from_bytes(data=audio_bytes, mime_type=audio_file.type or "audio/wav"),
+                    ],
+                )
+                transcript = (response.text or "").strip()
+                return transcript
+            except Exception as exc:
+                last_error = exc
+                err_str = str(exc)
+                if "429" in err_str or "quota" in err_str.lower():
+                    continue  # Move to the next fallback model
+                else:
+                    st.error(f"Voice transcription failed ({model_name}): {exc}")
+                    return ""
+                    
+        # If we exhausted the loop due to quotas
+        if last_error:
+            st.error("Voice transcription failed: API Quota Exhausted. Please wait about 45-60 seconds before trying again.")
         return ""
 
 
@@ -174,7 +186,8 @@ if session:
 
 # Render existing chat history
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
+    avatar = "👤" if msg["role"] == "user" else "✨"
+    with st.chat_message(msg["role"], avatar=avatar):
         st.write(msg["content"])
 
 
@@ -194,11 +207,11 @@ def _process_user_message(prompt: str):
         st.stop()
 
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
+    with st.chat_message("user", avatar="👤"):
         st.write(prompt)
 
-    with st.chat_message("assistant"):
-        with st.spinner("Agent is thinking..."):
+    with st.chat_message("assistant", avatar="✨"):
+        with st.spinner("Thinking..."):
             responses = handle(prompt, session)
             for reply in responses:
                 st.write(reply)
@@ -210,20 +223,23 @@ def _process_user_message(prompt: str):
     st.rerun()
 
 
-# Voice controls
-voice_col_1, voice_col_2 = st.columns([2, 1])
+# Voice controls styling for ChatGPT feel
+st.markdown("<div style='display: flex; justify-content: center; margin-top: 10px;'>", unsafe_allow_html=True)
+voice_col_1, voice_col_2 = st.columns([1, 4])
 with voice_col_1:
-    voice_audio = st.audio_input("🎤 Speak your message")
+    voice_audio = st.audio_input("🎙️")
 with voice_col_2:
-    speak_responses = st.toggle("🔊 Speak replies", value=True)
+    speak_responses = st.toggle("🔊 Audio Responses", value=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
-if st.button("Send Voice Message", use_container_width=True):
-    transcript = _transcribe_voice_input(voice_audio)
+if voice_audio is not None and st.button("Send Audio", use_container_width=True):
+    with st.spinner("Transcribing..."):
+        transcript = _transcribe_voice_input(voice_audio)
     if transcript:
-        st.caption(f"Recognized: {html.escape(transcript)}")
+        st.caption(f"You said: {html.escape(transcript)}")
         _process_user_message(transcript)
     else:
-        st.warning("Could not transcribe voice. Try again or type your message.")
+        st.warning("Could not transcribe voice. Please try again or type your message.")
 
 # User text input
 if prompt := st.chat_input("Type your message to the advisor..."):
